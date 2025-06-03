@@ -1,0 +1,4 @@
+Flask
+flasgger
+kafka-python
+gunicorn

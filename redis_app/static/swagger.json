@@ -1,0 +1,110 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Music Recommendation API",
+    "description": "API для поиска похожих треков по beat_id",
+    "version": "1.0.0"
+  },
+  "host": "localhost:5000",
+  "basePath": "/",
+  "schemes": ["http"],
+  "paths": {
+    "/similar_tracks": {
+      "get": {
+        "summary": "Получить похожие треки",
+        "description": "Находит похожие треки по переданному beat_id",
+        "parameters": [
+          {
+            "name": "track_id",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "description": "ID трека (beat_id) в формате UUID",
+            "example": "0196cecb-f306-7707-925f-576baf2af8cf"
+          },
+          {
+            "name": "top_n",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "default": 10,
+            "description": "Количество возвращаемых треков"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешный ответ. Список похожих треков",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Track"
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка: неверный формат UUID"
+          },
+          "404": {
+            "description": "Ошибка: трек не найден"
+          },
+          "500": {
+            "description": "Ошибка сервера"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Track": {
+      "type": "object",
+      "properties": {
+        "beat_id": {
+          "type": "string"
+        },
+        "file": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "price": {
+          "type": "number",
+          "format": "float"
+        },
+        "picture": {
+          "type": "string"
+        },
+        "timestamps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Timestamp"
+          }
+        }
+      }
+    },
+    "Timestamp": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "ID записи из timestamps"
+        },
+        "name": {
+          "type": "string",
+          "description": "Имя метки"
+        },
+        "time_start": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Время начала"
+        },
+        "time_end": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Время окончания"
+        }
+      }
+    }
+  }
+}

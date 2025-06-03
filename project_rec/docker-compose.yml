@@ -1,0 +1,20 @@
+# version: '3.8'
+
+# services:
+#   recommendation_service:  # Ваш второй микросервис
+#     build: .
+#     ports:
+#       - "8002:8002"  # Пробрасываем порт 8002
+#     environment:
+#       - KAFKA_BROKER=kafka:9092  # Пример для Kafka
+#     depends_on:
+#       - kafka
+
+#   # Доп. сервисы (если используются)
+#   kafka:
+#     image: bitnami/kafka:latest
+#     ports:
+#       - "9092:9092"
+#     environment:
+#       - KAFKA_ENABLE_KRAFT=yes
+#       - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092

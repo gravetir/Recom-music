@@ -1,0 +1,8 @@
+Flask
+Flask-Cors
+aiokafka
+boto3
+botocore
+pydantic
+python-dotenv
+flasgger
