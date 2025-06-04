@@ -44,7 +44,7 @@ class RecommendationConsumer:
                         if not beat:
                             continue
 
-                        # Обработка сообщения с помощью сервиса
+                        # Обработка сообщения 
                         self.service.process_kafka_message(user_id, beat)
 
                         # Явное подтверждение (commit) после обработки сообщения

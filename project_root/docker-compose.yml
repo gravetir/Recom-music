@@ -4,9 +4,9 @@ services:
   app:
     build: .
     ports:
-      - "8000:8000"  # Пример: если ваш API слушает порт 5000
+      - "8000:8000"  
     environment:
-      - KAFKA_BROKER=kafka:9092  # Переменные из config.py
+      - KAFKA_BROKER=kafka:9092 
     depends_on:
       - kafka
 

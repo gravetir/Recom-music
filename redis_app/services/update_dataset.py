@@ -13,7 +13,6 @@ def update_dataset() -> bool:
     try:
         df, features, genres, moods, tags = load_data()
 
-        # Обязательно обновляем глобальные переменные
         globals.dataset_df = df
         globals.df_feature_matrix = features
         globals.df_genres = genres
@@ -32,10 +31,8 @@ def run_nightly_update():
     def scheduler():
         while True:
             now = datetime.now()
-            # Проверяем каждые 30 секунд, не настало ли 00:00
             if now.hour == 0 and now.minute == 0:
-                if update_dataset():  # используем ту же функцию для обновления
-                    # После успешного обновления ждем минуту, чтобы не обновлять несколько раз
+                if update_dataset(): 
                     time.sleep(60)
             time.sleep(30)
 

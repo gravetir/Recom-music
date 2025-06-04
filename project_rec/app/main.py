@@ -23,7 +23,7 @@ def create_app():
     
     Swagger(app)
 
-    # Инициализация зависимостей
+    
     storage = RecommendationStorage()
     producer = RefillProducer()
     service = RecommendationService(storage, producer)
@@ -34,7 +34,7 @@ def create_app():
 
     # Запуск потребителя Kafka в фоновом потоке
     consumer = RecommendationConsumer(service)  # Передаем зависимость
-    threading.Thread(target=consumer.start, daemon=True).start()  # Используем метод start()
+    threading.Thread(target=consumer.start, daemon=True).start()
 
     # Запуск очистки хранилища в фоновом потоке
     threading.Thread(target=service.cleanup_storage, daemon=True).start()

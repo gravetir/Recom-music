@@ -1,6 +1,5 @@
 import pandas as pd
 
-# Инициализация глобальных переменных
 dataset_df = None
 df_feature_matrix = None
 df_genres = None

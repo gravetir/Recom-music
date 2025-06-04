@@ -53,7 +53,6 @@ def get_similar_tracks_use_case(track_id: str, top_n: int) -> List[Dict[str, Any
             if not update_dataset():
                 raise RuntimeError("Dataset reload failed")
         
-        # Проверка наличия трека
         if str(track_id) not in globals.dataset_df['beat_id'].astype(str).values:
             logger.warning(f"Track {track_id} not found in dataset")
             raise ValueError(f"Track {track_id} not found")
@@ -62,7 +61,6 @@ def get_similar_tracks_use_case(track_id: str, top_n: int) -> List[Dict[str, Any
         cached_data = redis_cache.get_similar_tracks(track_id)
         if cached_data:
             logger.debug(f"Returning cached data for track {track_id}")
-            # Фильтруем кэшированные данные перед возвратом
             return [{
                 "beat_id": item["beat_id"],
                 "file": item["file"],
@@ -75,14 +73,14 @@ def get_similar_tracks_use_case(track_id: str, top_n: int) -> List[Dict[str, Any
                 # "tags": item.get("tags", [])
             } for item in cached_data]
 
-        # Получаем похожие треки (только необходимые для API поля)
+        # Получаем похожие треки
         similar_tracks = find_similar_tracks(track_id, top_n=top_n, return_full_data=False)
         
         if not similar_tracks:
             logger.warning(f"No similar tracks found for {track_id}")
             return []
 
-        # Получаем и кэшируем полные данные (с genres/moods/tags)
+        # Получаем и кэшируем полные данные
         try:
             full_data = find_similar_tracks(track_id, top_n=top_n, return_full_data=True)
             redis_cache.set_similar_tracks(track_id, full_data)

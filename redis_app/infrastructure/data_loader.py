@@ -30,8 +30,8 @@ def safe_str_split(x, sep='||'):
 
 def load_lookup_tables():
     """
-    Загружает справочные таблицы genres, tags, moods с колонками id и name.
-    Сохраняет их в глобальные переменные.
+    Загружаем справочные таблицы genres, tags, moods с колонками id и name.
+
     """
     try:
         with engine.connect() as conn:
@@ -103,7 +103,6 @@ def load_data():
         if df.empty:
             logger.error("Query returned empty dataframe")
             return None, None, None, None, None
-         # Явно преобразуем timestamps из JSON строки в список словарей
         df['timestamps'] = df['timestamps'].apply(
             lambda x: json.loads(x) if isinstance(x, str) else x
         )

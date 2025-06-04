@@ -51,10 +51,10 @@ async def kafka_consumer_worker():
         value_deserializer=lambda x: json.loads(x.decode('utf-8')),
         enable_auto_commit=True,
         auto_commit_interval_ms=5000,
-        max_poll_interval_ms=300000,  # Увеличено до 5 минут
-        max_poll_records=1,           # Обрабатывать по 1 сообщению за раз
-        session_timeout_ms=30000,     # 30 секунд
-        heartbeat_interval_ms=3000    # 3 секунды
+        max_poll_interval_ms=300000,  
+        max_poll_records=1,           
+        session_timeout_ms=30000,     
+        heartbeat_interval_ms=3000    
     )
 
     try:

@@ -42,7 +42,7 @@ def calculate_similarities(
     tag_weight: float = 0.3,
     mood_weight: float = 0.2
 ) -> np.ndarray:
-    """Вычисляет комплексную меру схожести треков"""
+    """Вычисляем меру схожести треков"""
     mfcc_sim = cosine_similarity(
         feature_matrix[track_idx].reshape(1, -1), 
         feature_matrix
@@ -77,7 +77,7 @@ def prepare_track_response(track: pd.Series) -> Dict[str, Any]:
     }
 
 def prepare_full_track_data(track: pd.Series) -> Dict[str, Any]:
-    """Подготавливает полные данные трека (для кэша или внутреннего использования)"""
+    """Подготавливает полные данные трека"""
     response = prepare_track_response(track)
     response.update({
         # "beat_id": str(track['beat_id']),
@@ -104,7 +104,6 @@ def find_similar_tracks(
     """
     Находит похожие треки с обновлёнными данными
     
-    Args:
         track_id: ID трека для поиска похожих
         top_n: количество возвращаемых треков
         mfcc_weight: вес MFCC-признаков в схожести
@@ -113,7 +112,6 @@ def find_similar_tracks(
         mood_weight: вес настроений в схожести
         return_full_data: если True, возвращает полные данные (для кэша)
     
-    Returns:
         Список словарей с информацией о похожих треках
     """
     try:

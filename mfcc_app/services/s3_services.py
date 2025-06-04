@@ -3,7 +3,7 @@ import os
 from botocore.exceptions import ClientError
 import tempfile
 
-# Загрузка переменных окружения
+
 AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
 BUCKET_NAME = os.getenv('BUCKET_NAME', 'music-beats-bucket')
@@ -21,7 +21,7 @@ s3 = boto3.client(
     's3',
     aws_access_key_id=AWS_ACCESS_KEY_ID.strip(),
     aws_secret_access_key=AWS_SECRET_ACCESS_KEY.strip(),
-    region_name='ru-central1'  # Замените на свой регион
+    region_name='ru-central1'
 )
 
 def check_file_in_s3(filename):

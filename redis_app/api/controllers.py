@@ -17,12 +17,11 @@ def get_similar_tracks():
         return jsonify({"error": "track_id is required"}), 400
 
     try:
-        uuid.UUID(track_id)  # Валидация UUID
+        uuid.UUID(track_id) 
     except ValueError:
         return jsonify({"error": "track_id must be a valid UUID"}), 400
 
     try:
-        # Передаём force_refresh в use case
         similar_tracks = get_similar_tracks_use_case(track_id, top_n)
         
         if not similar_tracks:

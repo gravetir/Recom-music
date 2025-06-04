@@ -3,7 +3,6 @@ from flasgger import swag_from
 from app.use_cases.recommendation_service import RecommendationService
 
 def create_recommendation_blueprint(service: RecommendationService):
-    # Создаем Blueprint для рекомендаций
     bp = Blueprint('recommendations', __name__)
 
     @bp.route('/get_one_recommendation/<user_id>', methods=['GET'])

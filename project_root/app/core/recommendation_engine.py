@@ -27,7 +27,7 @@ class SimilarityCalculator:
 
 
 class RecommendationEngine:
-    """Генератор рекомендаций по жанрам или по лайкам"""
+    """Генерация рекомендаций по жанрам или по лайкам"""
 
     def __init__(self):
         self.scorer = TrackScorer()

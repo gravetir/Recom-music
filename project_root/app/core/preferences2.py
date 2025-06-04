@@ -5,7 +5,6 @@ import app.services.globals as globals
 class UserPreferenceAnalyzer:
     """
     Анализ предпочтений пользователя на основе лайкнутых треков.
-    Использует глобальные данные из globals.dataset_df.
     """
     @staticmethod
     def analyze_preferences(liked_ids: List[int]) -> Tuple[Dict[str, float], Dict[str, float], Dict[str, float]]:
