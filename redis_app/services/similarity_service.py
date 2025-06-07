@@ -14,7 +14,7 @@ logging.basicConfig(
 )
 
 def get_updated_data() -> Tuple[pd.DataFrame, np.ndarray, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Обновляет и возвращает актуальные данные для расчетов"""
+    """Обновляем и возвращаем актуальные данные для расчетов"""
     try:
         if globals.dataset_df is None or globals.df_feature_matrix is None:
             logger.info("Data not loaded, updating dataset...")
@@ -66,7 +66,7 @@ def calculate_similarities(
     return mfcc_sim + genre_sim + tag_sim + mood_sim
 
 def prepare_track_response(track: pd.Series) -> Dict[str, Any]:
-    """Подготавливает данные трека для ответа API"""
+    """Подготавливаем данные трека для ответа API"""
     return {
         "beat_id": str(track['beat_id']),
         "file": track.get("file", ""),
@@ -77,7 +77,7 @@ def prepare_track_response(track: pd.Series) -> Dict[str, Any]:
     }
 
 def prepare_full_track_data(track: pd.Series) -> Dict[str, Any]:
-    """Подготавливает полные данные трека"""
+    """Подготавливаем полные данные трека"""
     response = prepare_track_response(track)
     response.update({
         # "beat_id": str(track['beat_id']),

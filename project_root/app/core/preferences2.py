@@ -4,7 +4,7 @@ import app.services.globals as globals
 
 class UserPreferenceAnalyzer:
     """
-    Анализ предпочтений пользователя на основе лайкнутых треков.
+    Анализ предпочтений пользователя на основе лайкнутых треков
     """
     @staticmethod
     def analyze_preferences(liked_ids: List[int]) -> Tuple[Dict[str, float], Dict[str, float], Dict[str, float]]:

@@ -3,7 +3,7 @@ import numpy as np
 import os
 
 def analyze_audio(file_path):
-    """Анализ аудиофайла и извлечение характеристик"""
+    """Анализ аудиофайла и извлечение мел-кепстральных характеристик"""
     try:
         y, sr = librosa.load(file_path, sr=44100)
         mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=50)

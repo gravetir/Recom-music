@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class RecommendationConsumer:
     def __init__(self, service: RecommendationService):
         """
-        Конструктор для инициализации Kafka Consumer и сервиса.
+        Конструктор для инициализации Kafka Consumer и сервиса
         """
         self.service = service
         self.consumer = KafkaConsumer(
@@ -24,7 +24,7 @@ class RecommendationConsumer:
 
     def start(self):
         """
-        Основной метод потребителя, который запускает прослушку Kafka и обработку сообщений.
+        Основной метод потребителя, который запускает прослушку Kafka и обработку сообщений
         """
         while True:
             try:
@@ -47,7 +47,6 @@ class RecommendationConsumer:
                         # Обработка сообщения 
                         self.service.process_kafka_message(user_id, beat)
 
-                        # Явное подтверждение (commit) после обработки сообщения
                         self.consumer.commit()
 
                     except Exception as e:

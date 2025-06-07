@@ -11,7 +11,6 @@ def create_app():
     configure_routes(app)
     run_nightly_update()
     update_dataset()
-    # Swagger
     SWAGGER_URL = '/api/docs'
     API_URL = '/static/swagger.json'
     swaggerui_blueprint = get_swaggerui_blueprint(

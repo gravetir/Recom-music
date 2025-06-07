@@ -3,7 +3,7 @@ from app.services import globals
 
 class TrackScorer:
     """
-    Класс для оценки треков по весам жанров, тегов и настроений.
+    Класс для оценки треков по весам жанров, тегов и настроений
     """
     def __init__(self, genre_weight: float = 0.6, tag_weight: float = 0.3, mood_weight: float = 0.1):
         self.genre_weight = genre_weight

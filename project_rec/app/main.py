@@ -28,12 +28,12 @@ def create_app():
     producer = RefillProducer()
     service = RecommendationService(storage, producer)
 
-    # Регистрация маршрутов через функцию, создающую blueprint
+    # Регистрация маршрутов
     recommendation_bp = create_recommendation_blueprint(service)
     app.register_blueprint(recommendation_bp)
 
     # Запуск потребителя Kafka в фоновом потоке
-    consumer = RecommendationConsumer(service)  # Передаем зависимость
+    consumer = RecommendationConsumer(service) 
     threading.Thread(target=consumer.start, daemon=True).start()
 
     # Запуск очистки хранилища в фоновом потоке

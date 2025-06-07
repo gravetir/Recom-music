@@ -11,15 +11,15 @@ logger = logging.getLogger(__name__)
 class RecommendationService:
     def __init__(self, storage: RecommendationStorage, refill_producer: RefillProducer):
         """
-        Инициализация сервиса рекомендаций с хранилищем и продюсером refill-запросов.
+        Инициализация сервиса рекомендаций с хранилищем и продюсером refill-запросов
         """
         self.storage = storage
         self.refill_producer = refill_producer
 
     def get_recommendations(self, user_id: str, count: int):
         """
-        Получение списка рекомендаций для пользователя с проверкой на количество оставшихся.
-        Если количество рекомендаций меньше порогового значения, запускается запрос на пополнение.
+        Получение списка рекомендаций для пользователя с проверкой на количество оставшихся
+        Если количество рекомендаций меньше порогового значения, запускается запрос на пополнение
         """
         with self.storage.lock:
             recommendations = self.storage.user_recommendations.get(user_id, [])
@@ -45,7 +45,7 @@ class RecommendationService:
 
     def request_refill(self, user_id: str):
         """
-        Запрос на пополнение рекомендаций, если это необходимо.
+        Запрос на пополнение рекомендаций, если это необходимо
         """
         current_time = time.time()
 
@@ -66,8 +66,8 @@ class RecommendationService:
 
     def process_kafka_message(self, user_id: str, beat: dict):
         """
-        Метод для обработки сообщений, полученных из Kafka.
-        Добавляет beat в список рекомендаций для пользователя.
+        Метод для обработки сообщений, полученных из Kafka
+        Добавляет beat в список рекомендаций для пользователя
         """
         # Если пользователя нет в хранилище рекомендаций, создаём пустой список
         if user_id not in self.storage.user_recommendations:
@@ -81,7 +81,7 @@ class RecommendationService:
 
     def cleanup_storage(self):
         """
-        Периодическая очистка хранилища — удаление старых запросов и пользователей.
+        Периодическая очистка хранилища — удаление старых запросов и пользователей
         """
         while True:
             time.sleep(60)  # Очистка выполняется раз в минуту

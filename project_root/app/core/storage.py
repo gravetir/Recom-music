@@ -4,7 +4,7 @@ import time
 
 class RecommendationStorage:
     """
-    Хранилище состояния — рекомендации, лайки, жанры, обработанные оффсеты и т.п.
+    Хранилище состояния — рекомендации, лайки, жанры
     """
     def __init__(self):
         self.user_recommendations: Dict[str, List[Dict[str, Any]]] = defaultdict(list)

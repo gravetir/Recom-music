@@ -30,8 +30,7 @@ def safe_str_split(x, sep='||'):
 
 def load_lookup_tables():
     """
-    Загружаем справочные таблицы genres, tags, moods с колонками id и name.
-
+    Загружаем справочные таблицы genres, tags, moods с колонками id и name
     """
     try:
         with engine.connect() as conn:

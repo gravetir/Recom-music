@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 class SimilarityCalculator:
     """Класс для вычисления косинусного сходства между двумя словарями-векторами"""
-
     @staticmethod
     def cosine_similarity(vec1: Dict[str, float], vec2: Dict[str, float]) -> float:
         all_keys = set(vec1.keys()).union(vec2.keys())

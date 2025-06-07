@@ -49,7 +49,7 @@ def load_lookup_tables() -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame]
         return None, None, None
 
 def load_data() -> Tuple[
-    Optional[pd.DataFrame],  # исходный DataFrame с данными из SQL
+    Optional[pd.DataFrame],  # исходный DataFrame
     Optional[List[Dict[str, Any]]],  # beats — список словарей
     Optional[np.ndarray],  # feature_matrix
     Optional[pd.DataFrame],  # df_genres
@@ -145,7 +145,7 @@ def process_raw_data(df: pd.DataFrame) -> Tuple[List[Dict[str, Any]], np.ndarray
     df_tags = pd.get_dummies(df['tag_ids'].explode()).groupby(level=0).sum()
     df_moods = pd.get_dummies(df['mood_ids'].explode()).groupby(level=0).sum()
     
-    # Матрица фичей
+    # Матрица mfcc фичей
     audio_cols = [f'crm{i}' for i in range(1, 13)] + \
                 [f'mfcc{i}' for i in range(1, 51)] + \
                 ['melspectrogram', 'spectral_centroid']
@@ -155,7 +155,7 @@ def process_raw_data(df: pd.DataFrame) -> Tuple[List[Dict[str, Any]], np.ndarray
     return beats, feature_matrix, df_genres, df_tags, df_moods
 
 def get_audio_features(row) -> Dict[str, Any]:
-    """Извлекает аудио-фичи из строки DataFrame"""
+    """Извлекаем аудио-фичи из строки DataFrame"""
     return {
         "crm": [row[f'crm{i}'] for i in range(1, 13)],
         "melspectrogram": row['melspectrogram'],

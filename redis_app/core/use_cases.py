@@ -8,7 +8,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 # def _map_ids_to_names(id_list: List[str], lookup_df: pd.DataFrame, id_col: str = "id") -> List[str]:
-#     """Преобразует список ID в список названий"""
+#     """Преобразуем список ID в список названий"""
 #     if lookup_df is None or not isinstance(lookup_df, pd.DataFrame) or lookup_df.empty:
 #         logger.warning("Lookup DataFrame is not available")
 #         return []
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 def get_similar_tracks_use_case(track_id: str, top_n: int) -> List[Dict[str, Any]]:
     """
-    Получает похожие треки для заданного track_id
+    Получаем похожие треки для заданного track_id
     
     Args:
         track_id: UUID трека в строковом формате

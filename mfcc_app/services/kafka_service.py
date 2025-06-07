@@ -25,7 +25,7 @@ def send_kafka_message(topic, data):
     """Синхронная отправка сообщения в Kafka"""
     try:
         future = producer.send(topic, value=data)
-        future.get(timeout=10)  # Ожидаем подтверждения
+        future.get(timeout=10) 
         return True
     except Exception as e:
         print(f"[ERROR] Failed to send Kafka message: {str(e)}")
