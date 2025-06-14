@@ -11,17 +11,23 @@ import app.services.globals as globals
 from app.core.recommendation_engine import RecommendationEngine
 from app.core.storage import RecommendationStorage
 from app.services.kafka_service import KafkaClient
+from flask_jwt_extended import JWTManager
+import os
+
 # Настройка логирования
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
-    
+    app.config["JWT_SECRET_KEY"] = os.getenv(
+        "JWT_SECRET_KEY", "default-secret-if-not-set"
+    )
+    jwt = JWTManager(app)
 
     def initialize_data():
         """Загрузка и инициализация данных при старте приложения"""
@@ -48,39 +54,48 @@ def create_app():
         except Exception as e:
             logger.critical(f"Data initialization failed: {str(e)}", exc_info=True)
             raise
-    
+
     def configure_swagger():
         swagger_config = {
             "headers": [],
-            "specs": [{
-                "endpoint": 'apispec',
-                "route": '/api-spec.json',
-                "rule_filter": lambda rule: True,
-                "model_filter": lambda tag: True,
-            }],
+            "specs": [
+                {
+                    "endpoint": "apispec",
+                    "route": "/api-spec.json",
+                    "rule_filter": lambda rule: True,
+                    "model_filter": lambda tag: True,
+                }
+            ],
             "static_url_path": "/flasgger_static",
             "swagger_ui": True,
             "specs_route": "/docs/",
             "title": "Music Recommendations API",
             "version": "1.0.0",
             "uiversion": 3,
-            "termsOfService": ""
+            "termsOfService": "",
         }
 
         template = {
+            "swagger": "2.0",
             "info": {
                 "title": "Music Recommendations API",
                 "description": "API для генерации музыкальных рекомендаций",
-                "contact": {
-                    "email": "support@musicrec.com"
-                },
-                "version": "1.0.0"
+                "version": "1.0.0",
             },
             "host": "localhost:8000",
             "basePath": "/",
             "schemes": ["http"],
             "consumes": ["application/json"],
-            "produces": ["application/json"]
+            "produces": ["application/json"],
+            "securityDefinitions": {
+                "JWT": {
+                    "type": "apiKey",
+                    "name": "Authorization",
+                    "in": "header",
+                    "description": "Введите JWT токен с словом Bearer ",
+                }
+            },
+            # "security": [{"Bearer": []}]
         }
 
         Swagger(app, config=swagger_config, template=template)
@@ -96,11 +111,13 @@ def create_app():
         tasks = [
             (consume_recommendations, "Kafka Recommendations Consumer"),
             (consume_refill_requests, "Kafka Refill Consumer"),
-            (run_nightly_update, "Nightly Dataset Update")
+            (run_nightly_update, "Nightly Dataset Update"),
         ]
 
         for target, name in tasks:
-            thread = threading.Thread(target=lambda: run_safe(target, name), daemon=True)
+            thread = threading.Thread(
+                target=lambda: run_safe(target, name), daemon=True
+            )
             thread.start()
 
     try:

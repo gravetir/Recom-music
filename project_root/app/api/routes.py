@@ -1,43 +1,136 @@
 import time
 import uuid
-from flask import request, jsonify
-from flasgger import swag_from
-from app.config import Config
 import logging
 from datetime import datetime
-import json
+from typing import List, Dict, Any
+
+from flask import request, jsonify, Flask
+from flasgger import swag_from
+from flask_jwt_extended import (
+    jwt_required,
+    get_jwt_identity,
+    create_access_token
+)
+from flask_cors import CORS
+from app.config import Config
 
 logger = logging.getLogger(__name__)
 
-def register_routes(app, engine, storage, kafka):
+def register_routes(app: Flask, engine, storage, kafka):
+    CORS(app)
 
-    @app.route('/create_rec_first_launch', methods=['POST'])
+    @app.route('/login', methods=['POST'])
     @swag_from({
-        'tags': ['Recommendations'],
-        'description': 'Генерация рекомендаций по жанрам',
-        'parameters': [
-            {
-                'in': 'body',
-                'name': 'body',
-                'required': True,
+        'tags': ['Auth'],
+        'description': 'Получение JWT токена по username и password',
+        'parameters': [{
+            'in': 'body',
+            'name': 'body',
+            'required': True,
+            'schema': {
+                'type': 'object',
+                'properties': {
+                    'username': {'type': 'string', 'example': 'user1'},
+                    'password': {'type': 'string', 'example': '123'}
+                },
+                'required': ['username', 'password']
+            }
+        }],
+        'responses': {
+            200: {
+                'description': 'JWT токен успешно сгенерирован',
                 'schema': {
                     'type': 'object',
                     'properties': {
-                        'genres': {
-                            'type': 'array',
-                            'items': {'type': 'int'},
-                            'example': ['3', '5', '9'],
-                            'description': 'Список жанров (3-5 элементов)'
-                        },
-                        'user_id': {
-                            'type': 'string',
-                            'description': 'ID пользователя (опционально)'
-                        }
-                    },
-                    'required': ['genres']
+                        'access_token': {'type': 'string'}
+                    }
                 }
+            },
+            401: {'description': 'Неверный логин или пароль'}
+        }
+    })
+    def login():
+        data = request.get_json()
+        username = data.get('username')
+        password = data.get('password')
+
+        if not username or not password:
+                return jsonify({"msg": "Username and password are required"}), 400
+
+        access_token = create_access_token(identity=username)
+        return jsonify(access_token=access_token)
+
+
+    def send_recommendations(user_id: str, recommendations: List, beats_map: Dict[int, Dict[str, Any]]) -> List[Dict[str, Any]]:
+        beats = []
+
+        for rec in recommendations[:Config.BATCH_SIZE]:
+            full_beat = beats_map.get(rec[0])
+            if not full_beat:
+                logger.warning(f"[API] Beat id {rec[0]} не найден в beats_map")
+                continue
+
+            beat = {**full_beat}
+            beat["timestamp"] = datetime.now().isoformat()
+            beats.append(beat)
+            kafka.send_recommendation(user_id, beat)
+
+        kafka.flush_producer()
+        storage.direct_recommendations[user_id] = beats
+
+        if len(beats) <= Config.REFILL_THRESHOLD:
+            logger.info(f"[API] Недостаточно рекомендаций, инициируем refill для {user_id}")
+            request_refill(user_id)
+
+        return beats
+
+    def request_refill(user_id: str):
+        if not storage.should_refill(user_id, Config.REFILL_THRESHOLD, Config.REFILL_COOLDOWN):
+            logger.info(f"[API] Повторная генерация для {user_id} не требуется")
+            return
+
+        refill_request = {
+            "request_id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "count": Config.REFILL_COUNT,
+            "timestamp": int(time.time())
+        }
+
+        try:
+            logger.info(f"[API] Отправка refill-запроса для пользователя {user_id}")
+            kafka.producer.send(
+                topic=Config.REFILL_TOPIC,
+                value=refill_request,
+                key=user_id.encode('utf-8')
+            )
+            kafka.flush_producer()
+            storage.mark_refill_requested(user_id)
+        except Exception as e:
+            logger.error(f"[API] Ошибка при отправке refill-запроса: {e}")
+
+    @app.route('/create_rec_first_launch', methods=['POST'])
+    @jwt_required()
+    @swag_from({
+        'tags': ['Recommendations'],
+        'description': 'Генерация рекомендаций по жанрам (требуется JWT)',
+        'parameters': [{
+            'in': 'body',
+            'name': 'body',
+            'required': True,
+            'schema': {
+                'type': 'object',
+                'properties': {
+                    'genres': {
+                        'type': 'array',
+                        'items': {'type': 'int'},
+                        'example': [3, 5, 9],
+                        'description': 'Список жанров (3-5 элементов)'
+                    }
+                },
+                'required': ['genres']
             }
-        ],
+        }],
+        'security': [{'Bearer': []}],
         'responses': {
             200: {
                 'description': 'Успешный ответ',
@@ -50,36 +143,23 @@ def register_routes(app, engine, storage, kafka):
                     }
                 }
             },
-            400: {
-                'description': 'Неверный ввод',
-                'schema': {
-                    'type': 'object',
-                    'properties': {
-                        'error': {'type': 'string'}
-                    }
-                }
-            }
+            400: {'description': 'Неверный ввод'}
         }
     })
     def create_rec_first_launch():
-        logger.info("[API] Запрос на первую генерацию рекомендаций")
+        logger.info("[API] Первая генерация рекомендаций")
 
         data = request.get_json()
-        if not data or 'genres' not in data:
-            logger.warning("[API] Отсутствует поле 'genres' в теле запроса")
-            return jsonify({"error": "Genres list is required"}), 400
-
-        genres = [str(g).strip() for g in data['genres'] if str(g).strip()]
+        genres = [str(g).strip() for g in data.get('genres', []) if str(g).strip()]
         logger.debug(f"[API] Получены жанры: {genres}")
 
-        if len(genres) < Config.MIN_GENRES or len(genres) > Config.MAX_GENRES:
-            logger.warning(f"[API] Некорректное количество жанров: {len(genres)}")
+        if not genres or len(genres) < Config.MIN_GENRES or len(genres) > Config.MAX_GENRES:
             return jsonify({
                 "error": f"Number of genres must be between {Config.MIN_GENRES} and {Config.MAX_GENRES}"
             }), 400
 
-        user_id = data.get('user_id', str(uuid.uuid4()))
-        logger.info(f"[API] Используется user_id: {user_id}")
+        user_id = get_jwt_identity()
+        logger.info(f"[API] user_id из JWT: {user_id}")
 
         storage.user_genres[user_id] = genres
         storage.clear_recommendations(user_id)
@@ -88,31 +168,7 @@ def register_routes(app, engine, storage, kafka):
             recommendations = engine.generate_recommendations_by_genres(genres)
             logger.info(f"[API] Сгенерировано {len(recommendations)} рекомендаций")
 
-            # Создаем мапу для быстрого поиска полного трека по id
-            beats_map = {beat['id']: beat for beat in engine.beats}
-
-            beats = []
-            for rec in recommendations[:Config.BATCH_SIZE]:
-                full_beat = beats_map.get(rec[0])
-                if not full_beat:
-                    logger.warning(f"[API] Beat id {rec[0]} не найден в beats_map")
-                    continue
-
-                # Добавляем поле score из rec и остальные поля из полного объекта
-                beat = {
-                    **full_beat
-                }
-                beats.append(beat)
-
-                kafka.send_recommendation(user_id, beat)
-
-            kafka.flush_producer()
-            storage.direct_recommendations[user_id] = beats
-            logger.info(f"[API] Отправлено {len(beats)} треков в Kafka")
-
-            if len(beats) <= Config.REFILL_THRESHOLD:
-                logger.info(f"[API] Недостаточно рекомендаций, инициируем refill для {user_id}")
-                request_refill(user_id)
+            beats = send_recommendations(user_id, recommendations, {b['id']: b for b in engine.beats})
 
             return jsonify({
                 "status": "success",
@@ -121,36 +177,34 @@ def register_routes(app, engine, storage, kafka):
             })
 
         except Exception as e:
-            logger.exception(f"[API] Ошибка при генерации рекомендаций: {e}")
+            logger.exception(f"[API] Ошибка при генерации по жанрам: {e}")
             return jsonify({"error": "Failed to generate recommendations"}), 500
 
     @app.route('/create_rec_likes_tracks', methods=['POST'])
     @swag_from({
         'tags': ['Recommendations'],
         'description': 'Генерация рекомендаций по лайкам',
-        'parameters': [
-            {
-                'in': 'body',
-                'name': 'body',
-                'required': True,
-                'schema': {
-                    'type': 'object',
-                    'properties': {
-                        'song_id': {
-                            'type': 'array',
-                            'items': {'type': 'integer'},
-                            'example': [1, 2, 3],
-                            'description': 'Список ID лайкнутых треков'
-                        },
-                        'user_id': {
-                            'type': 'string',
-                            'description': 'ID пользователя (опционально)'
-                        }
+        'parameters': [{
+            'in': 'body',
+            'name': 'body',
+            'required': True,
+            'schema': {
+                'type': 'object',
+                'properties': {
+                    'song_id': {
+                        'type': 'array',
+                        'items': {'type': 'integer'},
+                        'example': [1, 2, 3],
+                        'description': 'Список ID лайкнутых треков'
                     },
-                    'required': ['song_id']
-                }
+                    'user_id': {
+                        'type': 'string',
+                        'description': 'ID пользователя (опционально)'
+                    }
+                },
+                'required': ['song_id']
             }
-        ],
+        }],
         'responses': {
             200: {
                 'description': 'Успешный ответ',
@@ -163,27 +217,16 @@ def register_routes(app, engine, storage, kafka):
                     }
                 }
             },
-            400: {
-                'description': 'Неверный ввод',
-                'schema': {
-                    'type': 'object',
-                    'properties': {
-                        'error': {'type': 'string'}
-                    }
-                }
-            }
+            400: {'description': 'Неверный ввод'}
         }
     })
     def create_rec_likes_tracks():
-        logger.info("[API] Запрос на генерацию рекомендаций по лайкам")
+        logger.info("[API] Генерация рекомендаций по лайкам")
 
         data = request.get_json()
-        if not data or 'song_id' not in data:
-            logger.warning("[API] Отсутствует поле 'song_id' в теле запроса")
+        liked_ids = data.get('song_id')
+        if not liked_ids:
             return jsonify({"error": "song_id list is required"}), 400
-
-        liked_ids = data['song_id']
-        logger.debug(f"[API] Получены лайкнутые ID: {liked_ids}")
 
         user_id = data.get('user_id', str(uuid.uuid4()))
         logger.info(f"[API] Используется user_id: {user_id}")
@@ -195,31 +238,7 @@ def register_routes(app, engine, storage, kafka):
             recommendations = engine.generate_recommendations_by_likes(liked_ids)
             logger.info(f"[API] Сгенерировано {len(recommendations)} рекомендаций")
 
-
-            beats_map = {beat['id']: beat for beat in engine.beats}
-
-            beats = []
-            for rec in recommendations[:Config.BATCH_SIZE]:
-                full_beat = beats_map.get(rec[0])
-                if not full_beat:
-                    logger.warning(f"[API] Beat id {rec[0]} не найден в beats_map")
-                    continue
-
-                beat = {
-                    **full_beat,
-                    "timestamp": datetime.now().isoformat()
-                }
-                beats.append(beat)
-
-                kafka.send_recommendation(user_id, beat)
-
-            kafka.flush_producer()
-            storage.direct_recommendations[user_id] = beats
-            logger.info(f"[API] Отправлено {len(beats)} треков в Kafka")
-
-            if len(beats) <= Config.REFILL_THRESHOLD:
-                logger.info(f"[API] Недостаточно рекомендаций, инициируем refill для {user_id}")
-                request_refill(user_id)
+            beats = send_recommendations(user_id, recommendations, {b['id']: b for b in engine.beats})
 
             return jsonify({
                 "status": "success",
@@ -228,7 +247,7 @@ def register_routes(app, engine, storage, kafka):
             })
 
         except Exception as e:
-            logger.exception(f"[API] Ошибка при генерации рекомендаций: {e}")
+            logger.exception(f"[API] Ошибка при генерации по лайкам: {e}")
             return jsonify({"error": "Failed to generate recommendations"}), 500
 
     @app.route('/health', methods=['GET'])
@@ -248,7 +267,7 @@ def register_routes(app, engine, storage, kafka):
         }
     })
     def health_check():
-        logger.info("[API] Health check requested")
+        logger.info("[API] Health check")
         return jsonify({"status": "healthy"})
 
     def request_refill(user_id: str):
